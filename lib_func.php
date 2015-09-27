@@ -322,7 +322,7 @@ $SIXNINE=0;$SIXFOUR=0;
 $THIRNINE=0;$ZEROTHIRFOUR=0;
 $USERZALIK=0;$USEREXAM=0;
 //***
-function doc_Download($arr)
+function doc_Download($arr, $cid)
 {
     global  $USERZALIK, $USEREXAM, $tchData, $DOPZ, $NEDOPZ, $DOPE, $NEDOPE,
             $DEVCTO, $MINSIX, $MAXSIX, $EIGHTNINE, $SEVNINE, $SIXNINE,
@@ -367,7 +367,7 @@ function doc_Download($arr)
                 round($v->scgd),//exam
                 round($v->allgd),
                 FourGrd($v->allgd),
-                ECTS($v->allgd),
+                ECTS($v->allgd, $cid),
                 null
             );
         }
@@ -475,16 +475,45 @@ function simbolReplace($str,$tchData)
     );
     return strtr($str,$tr);
 }
-function ECTS($gr)
+function ECTS($gr, $cid)
 {
+    global $DB, $CFG;
     $grd=round($gr);
-    if( (($grd>=90) and ($grd<=100) )or( ($grd>100) ) ){return 'A';}
-    if( ($grd>=80) and ($grd<=89) ){return 'B';}
-    if( ($grd>=70) and ($grd<=79) ){return 'C';}
-    if( ($grd>=65) and ($grd<=69) ){return 'D';}
-    if( ($grd>=60) and ($grd<=64) ){return 'E';}
-    if( ($grd>=30) and ($grd<=59) ){return 'FX';}
-    if( ($grd>=0)  and ($grd<=29) ){return 'F';}
+    $query="
+    SELECT
+        `grl`.`lowerboundary` AS `lb`,
+        `grl`.`letter` AS `letter`
+    FROM `{$CFG->prefix}grade_letters` AS `grl`
+    INNER JOIN `{$CFG->prefix}context` AS `con` ON `con`.`id`=`grl`.`contextid`
+    WHERE `instanceid`=:cid
+    ";
+    if ($arr = $DB->get_records_sql($query, array('cid'=>(int)$cid)))
+    {
+        foreach ($arr as $val)
+        {
+            $dtObj = new StdClass();
+            $dtObj->letter=$val->letter;
+            $dtObj->min=$val->lb;
+            $dtObj->max=null;
+            $ltArr[]=$dtObj;
+            unset($dtObj);
+        }
+        unset($val);
+    }
+    for($i=0,$cntArrEl=sizeof($ltArr);$i<$cntArrEl;$i++)
+    {
+        $k=$i+1;
+        if($k!=$cntArrEl)
+        {$max=($ltArr[$k]->min)-0.01;}
+            else{$max=100;}
+        $ltArr[$i]->max=$max;
+    }
+    for($i=0,$cntArrEl=sizeof($ltArr);$i<$cntArrEl;$i++)
+    {
+        if( ($grd>=$ltArr[$i]->min) && ($grd<=$ltArr[$i]->max) )
+            {return $ltArr[$i]->letter;}
+    }
+    return null;
 }
 function FourGrd($gr)
 {

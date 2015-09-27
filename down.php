@@ -78,4 +78,4 @@ $tchData->NYED=explode("-",$arrNvchYr[(int)$tchData->NUMSEM])[1];
 
 //echo "<pre>"; print_r( $tchData ); echo "<br />"; print_r( dtVariable($cid, $tchData) ); echo "</pre>";die;
 
-doc_Download( dtVariable($cid, $tchData) );
+doc_Download( dtVariable($cid, $tchData), $cid );
